@@ -10,29 +10,25 @@ class RadnaPovrsina
     spreadsheet = session.spreadsheet_by_key(kljuc)
     @worksheet = spreadsheet.worksheets[list]
     @total_red = uzmi_total()
-    makeMethods()
+    makeMethods
   end
   
   def uzmi_total()
     total = -1
     vrati_niz.each.each_with_index do |red,index|
       red.each do |polje|
-        if polje == "total" || polje == "subtotal"
-          total = index
-        end
+        total = index  if polje == "total" || polje == "subtotal"
       end
     end
     total
   end
 
   def vrati_niz()
-   @worksheet.rows
+    @worksheet.rows
   end
 
   def vrati_red(num)
-    if num != @total_red
-     @worksheet.rows[num]
-    end
+    @worksheet.rows[num] if num != @total_red  
   end
 
   def each
@@ -42,7 +38,6 @@ class RadnaPovrsina
   end
 
   def makeMethods()
-   
     hdr = 0
     vrati_red(hdr).each_with_index do |header,index|
       RadnaPovrsina.class_eval do
@@ -50,95 +45,67 @@ class RadnaPovrsina
           self[header]
         end
       end
-
     end
-
   end
-
- 
 
   def vrati_index(vrednost)
     hdr = 0
     br_kolone = -1
-    
     vrati_red(hdr).each_with_index do |header,index|
-      if header == vrednost
-        br_kolone = index
-        break
-      end
+      br_kolone = index if header == vrednost
+      break if header == vrednost
     end
     br_kolone
   end
 
   def [](vrednost)
-    
     br_kolone = vrati_index(vrednost)
-    if br_kolone == -1
-      p "Ne psotoji header sa tim nazivom"
-      return
-    else
-      PristupKolonama.new(self,br_kolone + 1)
-    end
-    
+    raise "Ne psotoji header sa tim nazivom" if br_kolone == -1   
+    PristupKolonama.new(self,br_kolone + 1)
   end
 
   def -(drugaT)
     brojac = 0
-    if drugaT.is_a?(RadnaPovrsina)
-      vrati_niz.each_with_index do |red,index|
+    raise ArgumentError, "Greska ne mogu se oduzimati #{drugaT.class} objekti" if drugaT.is_a?(RadnaPovrsina)  
+    vrati_niz.each_with_index do |red,index|
         brojac+=1
         flag = red.all? { |element| element == "" } 
         next if index.zero?
         next if flag
-       drugaT.vrati_niz.each do |red2|
+        drugaT.vrati_niz.each do |red2|
           if red == red2
            self.worksheet.delete_rows(brojac, 1)
            brojac -= 1
           end
-       end
-       
-      end
-    self.worksheet.save
-    else
-      raise ArgumentError, "Greska ne mogu se oduzimati #{drugaT.class} objekti"
+        end  
     end
+    self.worksheet.save
   end
 
   def +(drugaT)
     list = []
     n = 0
     br = 1
-    if drugaT.is_a?(RadnaPovrsina)
-      vrati_niz.each_with_index do |red,index|
-        
+    raise ArgumentError, "Greska ne mogu se oduzimati #{drugaT.class} objekti" if !drugaT.is_a?(RadnaPovrsina)
+    vrati_niz.each_with_index do |red,index|    
         flag = red.all? { |element| element == "" }  
-        br += 1
-        
+        br += 1   
         next if index.zero?
         next if flag
         n += 1
         br -=1 
         list << red
-      end
-       drugaT.vrati_niz.each_with_index do |red2,index2|
+    end
+    drugaT.vrati_niz.each_with_index do |red2,index2|
         flag = red2.all? { |element| element == "" }  
         next if index2.zero?
         next if flag
-        p index2
-        p @total_red
         next if index2 == drugaT.total_red
-            list << red2 unless list.include?(red2)        
-       end
-      list.shift(n)
-      
-     
-      self.worksheet.insert_rows(br, list)
-     
- 
-      #self.worksheet.save
-    else
-      raise ArgumentError, "Greska ne mogu se oduzimati #{drugaT.class} objekti"
+        list << red2 unless list.include?(red2)        
     end
+   list.shift(n)
+   self.worksheet.insert_rows(br, list)
+   self.worksheet.save  
   end
 
   class PristupKolonama
@@ -152,9 +119,9 @@ class RadnaPovrsina
       @radnaPovrsina.vrati_niz.each_with_index do |red,index|
         str = red[@kolona - 1].downcase
         PristupKolonama.class_eval do
-          define_method(str) do
-            @radnaPovrsina.vrati_red(index)
-          end
+            define_method(str) do
+              @radnaPovrsina.vrati_red(index)
+            end
         end
       end 
     end
@@ -174,10 +141,8 @@ class RadnaPovrsina
       sum = 0
       @radnaPovrsina.vrati_niz.each_with_index do |red,index|
         next if index.zero?
-        if index != @radnaPovrsina.total_red
-          value = red[@kolona - 1].to_i
-          sum += value
-        end
+        next if index == @radnaPovrsina.total_red
+        sum += red[@kolona - 1].to_i 
       end
       p "Sum: #{sum}"
     end
@@ -187,12 +152,9 @@ class RadnaPovrsina
       br = 0
       @radnaPovrsina.vrati_niz.each_with_index do |red,index|
         next if index.zero?
-        if index != @radnaPovrsina.total_red
-          value = red[@kolona - 1].to_i
-          sum += value
-          br += 1
-          p value
-        end
+        next if index == @radnaPovrsina.total_red
+        sum += red[@kolona - 1].to_i 
+        br += 1
       end
       p "Average: #{sum/br}"
     end
@@ -241,7 +203,7 @@ t2 = RadnaPovrsina.new(kljuc,list2)
 #sabiranje
 # p t2.vrati_niz
 # p t1.vrati_niz
-# t2 + t1
+#  t2 + t1
 # p"------------------"
 # p t2.vrati_niz
 
@@ -252,3 +214,4 @@ t2 = RadnaPovrsina.new(kljuc,list2)
 # p"------------------"
 # p t2.vrati_niz
 
+t1.drugakolona.sum
