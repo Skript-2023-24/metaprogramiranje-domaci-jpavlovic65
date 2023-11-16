@@ -1,17 +1,5 @@
 require "google_drive"
 
-def convert(input_string)
-  no_spaces = input_string.gsub(/\s+/, '')
-
-  lowercase_string = no_spaces.downcase
-
-  camel_case_string = lowercase_string.split.map.with_index do |word, index|
-    index == 0 ? word : word.capitalize
-  end.join
-
-  camel_case_string
-end
-
 class RadnaPovrsina
   include Enumerable
   attr_accessor :worksheet
@@ -57,10 +45,8 @@ class RadnaPovrsina
    
     hdr = 0
     vrati_red(hdr).each_with_index do |header,index|
-
-      str = convert(header)
       RadnaPovrsina.class_eval do
-        define_method(str) do
+        define_method(header.split(/ /).map{ |w| w[0] = w[0].downcase; w }.join) do
           self[header]
         end
       end
@@ -97,10 +83,11 @@ class RadnaPovrsina
   end
 
   def -(drugaT)
-    brojac = 2
+    brojac = 0
     if drugaT.is_a?(RadnaPovrsina)
       vrati_niz.each_with_index do |red,index|
-        flag = red.all? { |element| element == "" }  
+        brojac+=1
+        flag = red.all? { |element| element == "" } 
         next if index.zero?
         next if flag
        drugaT.vrati_niz.each do |red2|
@@ -109,7 +96,7 @@ class RadnaPovrsina
            brojac -= 1
           end
        end
-       brojac+=1
+       
       end
     self.worksheet.save
     else
@@ -120,24 +107,32 @@ class RadnaPovrsina
   def +(drugaT)
     list = []
     n = 0
+    br = 1
     if drugaT.is_a?(RadnaPovrsina)
       vrati_niz.each_with_index do |red,index|
+        
         flag = red.all? { |element| element == "" }  
+        br += 1
+        
         next if index.zero?
-        next if flag 
-        list << red
+        next if flag
         n += 1
+        br -=1 
+        list << red
       end
        drugaT.vrati_niz.each_with_index do |red2,index2|
         flag = red2.all? { |element| element == "" }  
         next if index2.zero?
         next if flag
+        p index2
+        p @total_red
+        next if index2 == drugaT.total_red
             list << red2 unless list.include?(red2)        
        end
       list.shift(n)
       
      
-      self.worksheet.insert_rows(3, list)
+      self.worksheet.insert_rows(br, list)
      
  
       #self.worksheet.save
@@ -179,10 +174,9 @@ class RadnaPovrsina
       sum = 0
       @radnaPovrsina.vrati_niz.each_with_index do |red,index|
         next if index.zero?
-        if red[@kolona - 1] != ""
+        if index != @radnaPovrsina.total_red
           value = red[@kolona - 1].to_i
           sum += value
-          p value
         end
       end
       p "Sum: #{sum}"
@@ -193,7 +187,7 @@ class RadnaPovrsina
       br = 0
       @radnaPovrsina.vrati_niz.each_with_index do |red,index|
         next if index.zero?
-        if red[@kolona - 1] != ""
+        if index != @radnaPovrsina.total_red
           value = red[@kolona - 1].to_i
           sum += value
           br += 1
@@ -213,18 +207,48 @@ t1 = RadnaPovrsina.new(kljuc,list1)
 t2 = RadnaPovrsina.new(kljuc,list2)
 
 
-#t1.each { |celija| p celija }
-# p t1["Prva Kolona"][3] 
-# t1["Prva Kolona"][3]= 400
-#t1["Prva Kolona"]
-# p t1.vrati_niz
-# p "-------------------------"
-# p t2.vrati_niz
-p t1.vrati_niz
-p t2.vrati_niz
-t1 + t2
-p"------------------"
-p t1.vrati_niz
+# Vrati dvo niz
+# t1.vrati_niz
 
-# p t1.vrati_red(7)
-# t2-t1
+# vrati redove
+#t1.vrati_red(2)
+
+# Ispisis sve elemente
+#t1.each { |celija| p celija }
+# Direktan pristup kolonama
+# p t1["Prva Kolona"]
+
+#pristup vrednostima
+# t1["Prva Kolona"][3]
+
+#Promena vrednosti
+# t1["Prva Kolona"][3]= 400
+
+# Pristup kolonama preko metoda
+# t1.prvakolona
+
+#Sum i avg
+# t1.prvakolona.sum
+# t2.drugakolona.avg
+
+# izvlacenje reda preko jedne celije
+#t1.index.rn22
+#mora se dopisati u tabelu indexi
+
+#Prepoznaje total
+# t1.vrati_red(8)
+
+#sabiranje
+# p t2.vrati_niz
+# p t1.vrati_niz
+# t2 + t1
+# p"------------------"
+# p t2.vrati_niz
+
+#oduzimanje
+# p t2.vrati_niz
+# p t1.vrati_niz
+# t2 + t1
+# p"------------------"
+# p t2.vrati_niz
+
